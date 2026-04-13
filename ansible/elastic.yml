@@ -1,0 +1,46 @@
+---
+- name: Установка Elasticsearch
+  hosts: elasticsearch
+  become: yes
+  gather_facts: true
+
+  tasks:
+    - name: Установка elasticsearch
+      apt:
+        deb: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/e/elasticsearch/elasticsearch-9.3.3-amd64.deb"
+
+    - name: Копируем конфиг файл elasticsearch
+      copy:
+        content: |
+          path.data: /var/lib/elasticsearch
+          path.logs: /var/log/elasticsearch
+          discovery.seed_hosts: ["127.0.0.1", "[::1]"]
+          network.host: 127.0.0.1
+          http.host: 0.0.0.0
+          http.port: 9200
+          discovery.type: single-node
+          xpack.security.enabled: false
+          xpack.security.enrollment.enabled: false
+          xpack.security.http.ssl.enabled: false
+          xpack.security.transport.ssl.enabled: false
+        dest: /etc/elasticsearch/elasticsearch.yml
+        owner: root
+        group: elasticsearch
+        mode: '0640'
+
+    - name: Elasticsearch sysctl tuning
+      sysctl:
+        name: vm.max_map_count
+        value: 262144
+        state: present
+        reload: yes
+
+    - name: daemon_reload
+      systemd:
+        daemon_reload: true
+
+    - name: Перезапускаем Elasticsearch и добавляем в автозагрузку
+      service:
+        name: elasticsearch
+        state: restarted
+        enabled: yes

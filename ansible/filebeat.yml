@@ -1,0 +1,47 @@
+---
+- name: Установка Filebeat
+  hosts: webservers
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Получаем IP хоста elasticsearch
+      set_fact:
+        elastic_ip: "{{ hostvars['elastic']['ansible_host'] }}"
+
+    - name: Устанавливаем filebeat
+      apt:
+        deb: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/f/filebeat/filebeat-9.3.3-amd64.deb"
+
+    - name: Создаем конфиг filebeat
+      copy:
+        dest: /etc/filebeat/filebeat.yml
+        content: |
+          filebeat.inputs:
+            - type: filestream
+              enabled: true
+              id: nginx-access
+              paths:
+                - /var/log/nginx/access.log
+              fields:
+                app: nginx
+                log_type: access
+              fields_under_root: true
+
+            - type: filestream
+              enabled: true
+              id: nginx-error
+              paths:
+                - /var/log/nginx/error.log
+              fields:
+                app: nginx
+                log_type: error
+              fields_under_root: true
+
+          output.elasticsearch:
+            hosts: ["{{ elastic_ip }}:9200"]
+
+    - name: Перезапускаем filebeat и добавляем в автозагрузку
+      systemd:
+        name: filebeat
+        state: restarted
+        enabled: yes

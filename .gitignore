@@ -1,0 +1,6 @@
+**/terraform/variables.tf
+**/terraform/terraform.tfstate
+**/terraform/terraform.tfstate.backup
+**/terraform/cloud-init.yml
+**/terraform/.terraform.lock.hcl
+**/terraform/authorized_key.json

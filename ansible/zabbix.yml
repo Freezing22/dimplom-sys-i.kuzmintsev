@@ -1,0 +1,176 @@
+---
+- name: Установка Zabbix сервера (MySQL) и агентов
+  hosts: all
+  become: yes
+  vars:
+    zabbix_server_host: "zabbix.ru-central1.internal"
+    zabbix_db_password: "StrongPassword123!"
+
+  tasks:
+    - name: Добавление Zabbix репозитория
+      shell: |
+        wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.0-4+ubuntu22.04_all.deb
+        dpkg -i zabbix-release_6.0-4+ubuntu22.04_all.deb
+        apt update
+      args:
+        creates: /etc/apt/sources.list.d/zabbix.list
+
+    #ZABBIX СЕРВЕР С MYSQL 
+    - name: Установка пакетов Zabbix сервера с MySQL
+      apt:
+        name:
+          - apache2
+          - libapache2-mod-php
+          - mysql-server
+          - php-mysql
+          - zabbix-server-mysql
+          - zabbix-frontend-php
+          - zabbix-apache-conf
+          - zabbix-sql-scripts
+          - zabbix-agent
+        state: present
+        update_cache: yes
+      when: "'monitoring' in group_names"
+
+    - name: Запуск MySQL
+      systemd:
+        name: mysql
+        state: started
+        enabled: yes
+      when: "'monitoring' in group_names"
+
+    - name: Создание БД и пользователя MySQL
+      shell: |
+        mysql -e "CREATE DATABASE IF NOT EXISTS zabbix character set utf8mb4 collate utf8mb4_bin;"
+        mysql -e "CREATE USER IF NOT EXISTS 'zabbix'@'localhost' IDENTIFIED BY '{{ zabbix_db_password }}';"
+        mysql -e "GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'localhost';"
+        mysql -e "SET GLOBAL log_bin_trust_function_creators = 1;"
+      when: "'monitoring' in group_names"
+
+    - name: Проверка необходимости импорта схемы
+      shell: mysql -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='zabbix';" -s -N
+      register: table_count
+      when: "'monitoring' in group_names"
+      changed_when: false
+
+    - name: Импорт схемы данных
+      shell: |
+        zcat /usr/share/zabbix-sql-scripts/mysql/server.sql.gz | mysql --default-character-set=utf8mb4 -uzabbix -p{{ zabbix_db_password }} zabbix
+      when: 
+        - "'monitoring' in group_names"
+        - table_count.stdout == "0"
+
+    - name: Отключение log_bin_trust_function_creators
+      shell: mysql -e "SET GLOBAL log_bin_trust_function_creators = 0;"
+      when: "'monitoring' in group_names"
+
+    - name: Настройка конфигурации Zabbix сервера
+      copy:
+        content: |
+          LogFile=/var/log/zabbix/zabbix_server.log
+          LogFileSize=0
+          PidFile=/run/zabbix/zabbix_server.pid
+          DBHost=localhost
+          DBName=zabbix
+          DBUser=zabbix
+          DBPassword={{ zabbix_db_password }}
+          StartPollers=5
+          StartTrappers=5
+          StartPingers=1
+          StartDiscoverers=1
+          CacheSize=32M
+          Timeout=4
+          ListenPort=10051
+        dest: /etc/zabbix/zabbix_server.conf
+        owner: zabbix
+        group: zabbix
+        mode: '0640'
+      when: "'monitoring' in group_names"
+
+    - name: Создание директории для PID
+      file:
+        path: /run/zabbix
+        state: directory
+        owner: zabbix
+        group: zabbix
+        mode: '0755'
+      when: "'monitoring' in group_names"
+
+    - name: Настройка PHP timezone
+      lineinfile:
+        path: /etc/zabbix/apache.conf
+        regexp: 'php_value date\.timezone'
+        line: '        php_value date.timezone Europe/Moscow'
+        insertafter: '<IfModule mod_php'
+      when: "'monitoring' in group_names"
+
+    - name: Конфигурация веб-интерфейса
+      copy:
+        content: |
+          <?php
+          global $DB;
+          $DB['TYPE']     = 'MYSQL';
+          $DB['SERVER']   = 'localhost';
+          $DB['DATABASE'] = 'zabbix';
+          $DB['USER']     = 'zabbix';
+          $DB['PASSWORD'] = '{{ zabbix_db_password }}';
+          $ZBX_SERVER      = 'localhost';
+          $ZBX_SERVER_PORT = '10051';
+          $ZBX_SERVER_NAME = 'Zabbix Monitoring';
+        dest: /etc/zabbix/web/zabbix.conf.php
+        owner: www-data
+        group: www-data
+        mode: '0640'
+      when: "'monitoring' in group_names"
+
+    - name: Перезагрузка systemd
+      systemd:
+        daemon_reload: yes
+      when: "'monitoring' in group_names"
+
+    - name: Запуск сервисов
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        enabled: yes
+      loop:
+        - zabbix-server
+        - zabbix-agent
+        - apache2
+      when: "'monitoring' in group_names"
+
+    #ZABBIX АГЕНТ 
+    - name: Установка Zabbix агента
+      apt:
+        name:
+          - zabbix-agent
+          - zabbix-sender
+        state: present
+        update_cache: yes
+      when: "'monitoring' not in group_names"
+    - name: Настройка конфигурации агента
+      copy:
+        content: |
+          PidFile=/run/zabbix/zabbix_agentd.pid
+          LogFile=/var/log/zabbix/zabbix_agentd.log
+          LogFileSize=0
+          Server=zabbix.ru-central1.internal,127.0.0.1,10.0.0.0/8
+          ServerActive=zabbix.ru-central1.internal
+          Hostname={{ inventory_hostname }}
+          HostMetadata=linux
+          HostnameItem=system.hostname
+          RefreshActiveChecks=120
+          BufferSend=5
+          BufferSize=100
+          Timeout=3
+        dest: /etc/zabbix/zabbix_agentd.conf
+        owner: zabbix
+        group: zabbix
+        mode: '0640'
+
+    - name: Запуск Zabbix агента
+      systemd:
+        name: zabbix-agent
+        state: started
+        enabled: yes
+      when: "'monitoring' not in group_names"

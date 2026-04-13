@@ -1,0 +1,31 @@
+---
+- name: Установка Kibana
+  hosts: kibana
+  become: yes
+  gather_facts: true
+  tasks:
+    - name: Получаем IP хоста elasticsearch
+      set_fact:
+        elastic_ip: "{{ hostvars['elastic']['ansible_host'] }}"
+
+    - name: Установка пакета kibana
+      apt:
+        deb: "https://mirror.yandex.ru/mirrors/elastic/9/pool/main/k/kibana/kibana-9.3.3-amd64.deb"
+
+    - name: Создаем конфигурационный файл kibana
+      copy:
+        dest: /etc/kibana/kibana.yml
+        content: |
+          server.port: 5601
+          server.host: "0.0.0.0"
+          elasticsearch.hosts: ["http://{{ elastic_ip }}:9200"]
+
+    - name: daemon_reload
+      systemd:
+        daemon_reload: true
+
+    - name: Перезапускаем kibana и добавляем в автозагрузку
+      service:
+        name: kibana
+        state: restarted
+        enabled: yes
