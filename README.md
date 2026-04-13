@@ -221,14 +221,15 @@ resource "yandex_compute_snapshot_schedule" "daily_backup_all" {
 
 ### Подготовка Playbook's
 
-Создаём файлы Ansible, у меня их получилось 5 .yml и 1 файл .ini: 
+Создаём файлы Ansible, у меня их получилось 5 .yml, 1 файл .ini и файл конфигураци: 
 
-hosts.ini
-elastic.yml
-filebeat.yml
-kibana.yml
-nginx.yml
-zabbix.yml
+[ansible.cfg](./ansible/ansible.cfg)
+[hosts.ini](./ansible/hosts.ini)
+[elastic.yml](./ansible/elastic.yml)
+[filebeat.yml](./ansible/filebeat.ini)
+[kibana.yml](./ansible/kibana.ini)
+[nginx.yml](./ansible/nginx.ini)
+[zabbix.yml](./ansible/zabbix.ini)
 
 После создания, проверяем доступность эндпоинтов с помощью команды 'ansible all -m ping'
 
@@ -307,8 +308,14 @@ zabbix.yml
 
 ```
 
+
+## Ссылки
+
+[Nginx](http://111.88.243.94/)
+[Kibana](http://111.88.243.179:5601)
+[Zabbix](http://93.77.185.147/zabbix)
+
+
 ---
-
-
 
 
