@@ -145,13 +145,13 @@ Apply complete! Resources: 28 added, 0 changed, 0 destroyed.
 
 Outputs:
 
-bastion_public_ip = "111.88.243.174"
-elastic_private_ip = "10.10.11.15"
-kibana_public_ip = "111.88.243.179"
-web1_private_ip = "10.10.11.22"
-web2_private_ip = "10.10.12.13"
+bastion_public_ip = "93.77.191.248"
+elastic_private_ip = "10.10.11.30"
+kibana_public_ip = "46.21.246.49"
+web1_private_ip = "10.10.11.6"
+web2_private_ip = "10.10.12.12"
 web_lb_public_ip = "111.88.243.94"
-zabbix_public_ip = "93.77.185.147"
+zabbix_public_ip = "46.21.246.72"
 
 ```
 Вывод был сделан для личного удобства, для работы в ansible согласно заданию по fqdn именам, создаётся автоматически файл hosts.ini и перемещается в ./ansible
@@ -241,7 +241,7 @@ resource "yandex_compute_snapshot_schedule" "daily_backup_all" {
 
 ![a_zabbix](./img/IMG9.png)
 
-Переходим на http://93.77.185.147/zabbix
+Переходим на http://46.21.246.72/zabbix
 
 ![a_zabbix2](./img/IMG10.png)
 
@@ -285,7 +285,7 @@ resource "yandex_compute_snapshot_schedule" "daily_backup_all" {
 
 ![a_filebeat](./img/IMG15.png)
 
-Переходим на http://111.88.243.179:5601 для настройки Kibana(сбор логов)
+Переходим на http://46.21.246.49:5601 для настройки Kibana(сбор логов)
 
 ![kibana_options](./img/IMG16.png)
 
@@ -312,8 +312,8 @@ resource "yandex_compute_snapshot_schedule" "daily_backup_all" {
 ## Ссылки
 
 [Nginx](http://111.88.243.94/)
-[Kibana](http://111.88.243.179:5601)
-[Zabbix](http://93.77.185.147/zabbix)
+[Kibana](http://46.21.246.49:5601)
+[Zabbix](http://46.21.246.72/zabbix)
 
 
 ---
