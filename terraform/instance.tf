@@ -20,7 +20,7 @@ resource "yandex_compute_instance" "bastion" {
     }
   }
 
-scheduling_policy { preemptible = true }
+scheduling_policy { preemptible = false }
 
   network_interface {
     subnet_id      = yandex_vpc_subnet.public_subnet_a.id
@@ -56,7 +56,7 @@ resource "yandex_compute_instance" "web1" {
     }
   }
 
-  scheduling_policy { preemptible = true }
+  scheduling_policy { preemptible = false }
 
   network_interface {
     subnet_id      = yandex_vpc_subnet.private_subnet_a.id
@@ -91,7 +91,7 @@ resource "yandex_compute_instance" "web2" {
     }
   }
 
-  scheduling_policy { preemptible = true }
+  scheduling_policy { preemptible = false }
 
   network_interface {
     subnet_id      = yandex_vpc_subnet.private_subnet_b.id
@@ -126,7 +126,7 @@ resource "yandex_compute_instance" "zabbix" {
     }
   }
 
-  scheduling_policy { preemptible = true }
+  scheduling_policy { preemptible = false }
 
   network_interface {
     subnet_id      = yandex_vpc_subnet.public_subnet_a.id
@@ -161,7 +161,7 @@ resource "yandex_compute_instance" "elastic" {
     }
   }
 
-  scheduling_policy { preemptible = true }
+  scheduling_policy { preemptible = false }
 
   network_interface {
     subnet_id      = yandex_vpc_subnet.private_subnet_a.id
@@ -195,7 +195,7 @@ resource "yandex_compute_instance" "kibana" {
     }
   }
 
-  scheduling_policy { preemptible = true }
+  scheduling_policy { preemptible = false }
 
   network_interface {
     subnet_id      = yandex_vpc_subnet.public_subnet_a.id

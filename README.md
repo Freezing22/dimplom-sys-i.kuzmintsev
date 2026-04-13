@@ -237,7 +237,7 @@ resource "yandex_compute_snapshot_schedule" "daily_backup_all" {
 
 ## Установка Playbook's
 
-### zabbix
+### zabbix server + zabbix agent
 
 ![a_zabbix](./img/IMG9.png)
 
